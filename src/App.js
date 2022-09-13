@@ -1,8 +1,6 @@
-import {
-  Route,
-  Routes,
-  useNavigate,
-} from "react-router-dom";
+import { useEffect, useState } from "react";
+
+import { Route, Routes, useNavigate } from "react-router-dom";
 
 import logo from "./images/devdao.svg";
 
@@ -26,23 +24,70 @@ import {
   MenuDivider,
 } from "@chakra-ui/react";
 
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 
 import Admin from "./pages/Admin";
 import Buy from "./pages/Buy";
 import CheckIn from "./pages/CheckIn";
 import Page from "./layouts/Page";
 import Wallet from "./pages/Wallet";
+import { ethers } from "ethers";
+
+import nfTixBooth from "./contracts/nfTixBooth.json";
 
 function App() {
   const navigate = useNavigate();
 
+  const [address, setAddress] = useState(null);
+  const [connectedContract, setconnectedContract] = useState(null);
+
+  console.log("connectedContract:", connectedContract);
+
+  useEffect(() => {
+    if (!address) {
+      const previousAddress = window.localStorage.getItem("nftix-address");
+
+      if (previousAddress) {
+        setAddress(previousAddress);
+      }
+    }
+  }, [address]);
+  console.log("address:", address);
+
+  const getConnectedContract = async () => {
+    const { ethereum } = window;
+    if (!ethereum) return;
+
+    const provider = new ethers.providers.Web3Provider(ethereum);
+
+    const signer = provider.getSigner();
+    const connectedContract = new ethers.Contract(
+      process.env.REACT_APP_CONTRACT_ID,
+      nfTixBooth.abi,
+      signer
+    );
+
+    setconnectedContract(connectedContract);
+  };
+
+  useEffect(() => {
+    getConnectedContract();
+  }, []);
+
   return (
     <>
-      <Connect />
+      <Connect
+        address={address}
+        onConnect={(address) => {
+          setAddress(address);
+
+          window.localStorage.setItem("nftix-address", address);
+        }}
+        onDisconnect={() => {
+          setAddress(null);
+          window.localStorage.removeItem("nftix-address");
+        }}
+      />
       <Page>
         <Menu
           left="0"
@@ -59,22 +104,12 @@ function App() {
                 right="16px"
                 as={Button}
                 colorScheme="purple"
-                rightIcon={
-                  isOpen ? (
-                    <ChevronUpIcon />
-                  ) : (
-                    <ChevronDownIcon />
-                  )
-                }
+                rightIcon={isOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
               >
                 Actions
               </MenuButton>
               <MenuList>
-                <MenuItem
-                  onClick={() =>
-                    navigate("/")
-                  }
-                >
+                <MenuItem onClick={() => navigate("/")}>
                   <Flex
                     alignItems="center"
                     flexDirection="row"
@@ -82,18 +117,11 @@ function App() {
                     justifyContent="space-between"
                   >
                     Buy
-                    <FontAwesomeIcon
-                      icon={faEthereum}
-                      size="lg"
-                    />
+                    <FontAwesomeIcon icon={faEthereum} size="lg" />
                   </Flex>
                 </MenuItem>
                 <MenuDivider />
-                <MenuItem
-                  onClick={() =>
-                    navigate("/wallet")
-                  }
-                >
+                <MenuItem onClick={() => navigate("/wallet")}>
                   <Flex
                     alignItems="center"
                     flexDirection="row"
@@ -101,20 +129,11 @@ function App() {
                     justifyContent="space-between"
                   >
                     Your Tickets
-                    <FontAwesomeIcon
-                      icon={faTicketAlt}
-                      size="lg"
-                    />
+                    <FontAwesomeIcon icon={faTicketAlt} size="lg" />
                   </Flex>
                 </MenuItem>
                 <MenuDivider />
-                <MenuItem
-                  onClick={() =>
-                    navigate(
-                      "/check-in"
-                    )
-                  }
-                >
+                <MenuItem onClick={() => navigate("/check-in")}>
                   <Flex
                     alignItems="center"
                     flexDirection="row"
@@ -122,18 +141,11 @@ function App() {
                     justifyContent="space-between"
                   >
                     Check In
-                    <FontAwesomeIcon
-                      icon={faQrcode}
-                      size="lg"
-                    />
+                    <FontAwesomeIcon icon={faQrcode} size="lg" />
                   </Flex>
                 </MenuItem>
                 <MenuDivider />
-                <MenuItem
-                  onClick={() =>
-                    navigate("/admin")
-                  }
-                >
+                <MenuItem onClick={() => navigate("/admin")}>
                   <Flex
                     alignItems="center"
                     flexDirection="row"
@@ -141,10 +153,7 @@ function App() {
                     justifyContent="space-between"
                   >
                     Settings
-                    <FontAwesomeIcon
-                      icon={faTools}
-                      size="lg"
-                    />
+                    <FontAwesomeIcon icon={faTools} size="lg" />
                   </Flex>
                 </MenuItem>
               </MenuList>
@@ -165,25 +174,13 @@ function App() {
             width="15%"
           />
           <Routes>
-            <Route
-              path="/"
-              element={<Buy />}
-            />
+            <Route path="/" element={<Buy />} />
 
-            <Route
-              path="/check-in"
-              element={<CheckIn />}
-            />
+            <Route path="/check-in" element={<CheckIn />} />
 
-            <Route
-              path="/admin"
-              element={<Admin />}
-            />
+            <Route path="/admin" element={<Admin />} />
 
-            <Route
-              path="/wallet"
-              element={<Wallet />}
-            />
+            <Route path="/wallet" element={<Wallet />} />
           </Routes>
         </Flex>
       </Page>
