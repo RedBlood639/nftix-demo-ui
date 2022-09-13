@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
-
 import { Route, Routes, useNavigate } from "react-router-dom";
-
 import logo from "./images/devdao.svg";
-
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEthereum } from "@fortawesome/free-brands-svg-icons";
 import {
@@ -11,7 +8,6 @@ import {
   faTools,
   faTicketAlt,
 } from "@fortawesome/free-solid-svg-icons";
-
 import Connect from "./components/Connect";
 import {
   Button,
@@ -23,25 +19,43 @@ import {
   MenuItem,
   MenuDivider,
 } from "@chakra-ui/react";
-
 import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
-
 import Admin from "./pages/Admin";
 import Buy from "./pages/Buy";
 import CheckIn from "./pages/CheckIn";
 import Page from "./layouts/Page";
 import Wallet from "./pages/Wallet";
 import { ethers } from "ethers";
-
 import nfTixBooth from "./contracts/nfTixBooth.json";
 
 function App() {
   const navigate = useNavigate();
 
   const [address, setAddress] = useState(null);
+
+  console.log("address:", address);
+
+  const [isOwner, setIsOwner] = useState(false);
+
+  console.log("isOwner:", isOwner);
+
   const [connectedContract, setconnectedContract] = useState(null);
 
   console.log("connectedContract:", connectedContract);
+
+  useEffect(() => {
+    const checkIsContractOwner = async () => {
+      if (!address || !connectedContract) return;
+      const ownerAddress = await connectedContract.owner();
+
+      if (address.toLowerCase() === ownerAddress.toLowerCase()) {
+        setIsOwner(true);
+      } else {
+        setIsOwner(false);
+      }
+    };
+    checkIsContractOwner();
+  }, [address, connectedContract]);
 
   useEffect(() => {
     if (!address) {
@@ -52,7 +66,6 @@ function App() {
       }
     }
   }, [address]);
-  console.log("address:", address);
 
   const getConnectedContract = async () => {
     const { ethereum } = window;
@@ -121,7 +134,10 @@ function App() {
                   </Flex>
                 </MenuItem>
                 <MenuDivider />
-                <MenuItem onClick={() => navigate("/wallet")}>
+                <MenuItem
+                  onClick={() => navigate("/wallet")}
+                  isDisabled={!address}
+                >
                   <Flex
                     alignItems="center"
                     flexDirection="row"
@@ -133,7 +149,10 @@ function App() {
                   </Flex>
                 </MenuItem>
                 <MenuDivider />
-                <MenuItem onClick={() => navigate("/check-in")}>
+                <MenuItem
+                  onClick={() => navigate("/check-in")}
+                  isDisabled={!isOwner}
+                >
                   <Flex
                     alignItems="center"
                     flexDirection="row"
@@ -145,7 +164,10 @@ function App() {
                   </Flex>
                 </MenuItem>
                 <MenuDivider />
-                <MenuItem onClick={() => navigate("/admin")}>
+                <MenuItem
+                  onClick={() => navigate("/admin")}
+                  isDisabled={!isOwner}
+                >
                   <Flex
                     alignItems="center"
                     flexDirection="row"
@@ -174,13 +196,27 @@ function App() {
             width="15%"
           />
           <Routes>
-            <Route path="/" element={<Buy />} />
+            <Route
+              path="/"
+              element={<Buy connectedContract={connectedContract} />}
+            />
 
-            <Route path="/check-in" element={<CheckIn />} />
+            <Route
+              path="/check-in"
+              element={<CheckIn connectedContract={connectedContract} />}
+            />
 
-            <Route path="/admin" element={<Admin />} />
+            <Route
+              path="/admin"
+              element={
+                <Admin
+                  isOwner={isOwner}
+                  connectedContract={connectedContract}
+                />
+              }
+            />
 
-            <Route path="/wallet" element={<Wallet />} />
+            <Route path="/wallet" element={<Wallet address={address} />} />
           </Routes>
         </Flex>
       </Page>
